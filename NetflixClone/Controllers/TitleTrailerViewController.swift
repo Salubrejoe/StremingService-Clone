@@ -13,20 +13,20 @@ class TitleTrailerViewController: UIViewController {
     
     private let titleLabel: UILabel = {
        
-        let label = UILabel()
+        let label                                       = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.font = .systemFont(ofSize: 22, weight: .bold)
-        label.text = "Indiana Janos"
+        label.font                                      = .systemFont(ofSize: 22, weight: .bold)
+
         return label
     }()
     
     private let overviewLabel: UILabel = {
        
-        let label = UILabel()
+        let label                                       = UILabel()
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.font = .systemFont(ofSize: 18, weight: .regular)
-        label.numberOfLines = 0
-        label.text = "Wouldn't know how to spell a burp"
+        label.font                                      = .systemFont(ofSize: 18, weight: .regular)
+        label.numberOfLines                             = 0
+
         return label
     }()
     
@@ -34,20 +34,23 @@ class TitleTrailerViewController: UIViewController {
        
         let button = UIButton()
         button.translatesAutoresizingMaskIntoConstraints = false
-        button.backgroundColor = .red
-        button.layer.cornerRadius = 9
+        button.backgroundColor                           = .red
+        button.layer.cornerRadius                        = 9
         button.setTitle("Download", for: .normal)
         button.setTitleColor(.white, for: .normal)
+        
         return button
     }()
     
     private let webView: WKWebView = {
         
-        let webView = WKWebView()
+        let webView                                       = WKWebView()
         webView.translatesAutoresizingMaskIntoConstraints = false
         return webView
     }()
 
+    
+    // MARK: View Did Load
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -60,13 +63,8 @@ class TitleTrailerViewController: UIViewController {
         view.addSubview(downloadButton)
         
         addConstraints()
+    }
 
-    }
-    
-    override func viewDidLayoutSubviews() {
-        
-    }
-    
     func addConstraints() {
         
         let webViewContraints = [
@@ -100,9 +98,11 @@ class TitleTrailerViewController: UIViewController {
         NSLayoutConstraint.activate(downloadButtonContraints)
     }
     
+    
+    // MARK: Method in didSelectRowAt:
     func configureController(with preview: TitlePreviewModel) {
         
-        titleLabel.text = preview.title
+        titleLabel.text    = preview.title
         overviewLabel.text = preview.overview
         
         guard let url = URL(string: "https://www.youtube.com/embed/\(preview.youTubeVideo.id.videoId)") else { return }

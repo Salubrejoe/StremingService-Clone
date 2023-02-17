@@ -40,7 +40,6 @@ class TitleCollectionViewCell: UICollectionViewCell {
     }
     
     
-    
     // MARK: Initialiser
     override init(frame: CGRect) {
         super.init(frame: frame)

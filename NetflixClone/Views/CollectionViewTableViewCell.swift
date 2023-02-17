@@ -14,14 +14,12 @@ protocol CollectionViewTableViewCellDelegate: AnyObject {
 
 
 class CollectionViewTableViewCell: UITableViewCell {
+    static let identifier = "CollectionViewTableViewCell"
     // MARK: Delegate property
     weak var delegate: CollectionViewTableViewCellDelegate?
     
     
-    static let identifier = "CollectionViewTableViewCell"
-    
     private var titles: [Title] = []
-    
     
 
     private let collectionView: UICollectionView = {
@@ -75,6 +73,12 @@ class CollectionViewTableViewCell: UITableViewCell {
         
         
     }
+    
+    
+    // MARK: Download item
+    private func downloadTitle(at indexPath: IndexPath) {
+        print("Downloading from item at indexPath")
+    }
 }
 
 
@@ -126,5 +130,21 @@ extension CollectionViewTableViewCell: UICollectionViewDelegate, UICollectionVie
             }
         }
         
+    }
+    
+    // For downloading the title
+    func collectionView(_ collectionView: UICollectionView, contextMenuConfigurationForItemAt indexPath: IndexPath, point: CGPoint) -> UIContextMenuConfiguration? {
+        
+        let contextMenuConfiguration = UIContextMenuConfiguration(
+            identifier: nil,
+            previewProvider: nil) { [weak self] _ in
+            
+                let downloadAction = UIAction(title: "Download", state: .off) { _ in
+                    self?.downloadTitle(at: indexPath)
+            }
+            return UIMenu(title: "", options: .displayInline, children: [downloadAction])
+        }
+        
+        return contextMenuConfiguration
     }
 }

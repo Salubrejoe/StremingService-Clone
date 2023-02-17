@@ -7,84 +7,91 @@
 
 import UIKit
 
-class SearchViewController: UIViewController, UISearchResultsUpdating {
+class SearchViewController: UIViewController, UISearchResultsUpdating, SearchResultsViewControllerDelegate {
     
   
-    private var titles = [Title]()
+    private var discoveriesTitles = [Title]()
     
+    private let discoveriesTableView = UITableView()
+
     
+    // MARK: Search Controller
     private let searchController: UISearchController = {
        
         let controller = UISearchController(searchResultsController: SearchResultsViewController())
-        controller.searchBar.placeholder = "Search for Movies or TV shows"
+        controller.searchBar.placeholder    = "Search for Movies or TV shows"
         controller.searchBar.searchBarStyle = .minimal
         
         return controller
     }()
     
-    private let discoverTableView: UITableView = {
-
-        let tableView = UITableView()
-        tableView.register(TitleTableViewCell.self, forCellReuseIdentifier: TitleTableViewCell.identifier)
-        return tableView
-    }()
-
+    
+    // MARK: View Did Load
     override func viewDidLoad() {
         super.viewDidLoad()
         
         view.backgroundColor = .systemBackground
         
         // Set Table View
-        view.addSubview(discoverTableView)
-        discoverTableView.delegate = self
-        discoverTableView.dataSource = self
+        view.addSubview(discoveriesTableView)
+        discoveriesTableView.register(TitleTableViewCell.self, forCellReuseIdentifier: TitleTableViewCell.identifier)
+        discoveriesTableView.delegate   = self
+        discoveriesTableView.dataSource = self
         
-        // Set title
+        // Set Navigation Controller
         title = "Search"
-        navigationController?.navigationBar.prefersLargeTitles = true
+        navigationController?.navigationBar.prefersLargeTitles     = true
         navigationController?.navigationItem.largeTitleDisplayMode = .always
+        navigationController?.navigationBar.tintColor              = .white
         
         // Set the Search Controller
-        navigationController?.navigationBar.tintColor = .white
-        navigationItem.searchController = searchController
-        searchController.searchResultsUpdater = self
+        navigationItem.searchController               = searchController
+        searchController.searchResultsUpdater         = self
 
         
-        fetchDiscoveries()
+        fetchDiscoveriesTitles()
     }
-    
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         
-        discoverTableView.frame = view.bounds
+        discoveriesTableView.frame = view.bounds
     }
     
     
-    func fetchDiscoveries() {
+    // MARK: APICaller
+    func fetchDiscoveriesTitles() {
         
         APICaller.shared.getDiscoverMovies { [weak self] result in
+            
             switch result {
+            
             case .success(let discoveries):
-                self?.titles = discoveries
+            
+                self?.discoveriesTitles = discoveries
+                
                 DispatchQueue.main.async {
-                    self?.discoverTableView.reloadData()
+                    self?.discoveriesTableView.reloadData()
                 }
+                
             case .failure(let error):
                 print(error)
             }
         }
     }
     
-    // MARK: UISearchResultsUpdating stubs
+    
+    // MARK: Protocol stubs
     func updateSearchResults(for searchController: UISearchController) {
             let searchBar = searchController.searchBar
             
             guard let query = searchBar.text,
-                  
-                // Each white space will be trimmed
+                  // Each white space will be trimmed
                   !query.trimmingCharacters(in: .whitespaces).isEmpty,
                   query.trimmingCharacters(in: .whitespaces).count >= 3,
-                  let resultsController = searchController.searchResultsController as? SearchResultsViewController else { return }
+                  let resultsController = searchController.searchResultsController as? SearchResultsViewController
+            else { return }
+            
+        resultsController.delegate = self
             
             APICaller.shared.search(with: query) { result in
                 
@@ -93,7 +100,7 @@ class SearchViewController: UIViewController, UISearchResultsUpdating {
                     switch result {
                         
                     case .success(let titles):
-                        resultsController.titles = titles
+                        resultsController.searchResultTitles = titles
                         resultsController.searchResultsCollectionView.reloadData()
                         
                     case .failure(let error):
@@ -101,9 +108,20 @@ class SearchViewController: UIViewController, UISearchResultsUpdating {
                     }
                 }
             }
+    }
+    
+    func didSelectSearchResult(_ viewModel: TitlePreviewModel) {
+        
+        DispatchQueue.main.async { [weak self] in
+            let vc = TitleTrailerViewController()
+            vc.configureController(with: viewModel)
+            
+            self?.navigationController?.pushViewController(vc, animated: true)
         }
-
+    }
 }
+
+
 
 
 // MARK: Data Source and Delegate
@@ -111,14 +129,14 @@ extension SearchViewController: UITableViewDelegate, UITableViewDataSource {
     
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return titles.count
+        return discoveriesTitles.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         guard let cell = tableView.dequeueReusableCell(withIdentifier: TitleTableViewCell.identifier, for: indexPath) as? TitleTableViewCell else { return UITableViewCell() }
         
-        let titleName = titles[indexPath.row]
+        let titleName = discoveriesTitles[indexPath.row]
         
         cell.configureCell(with: TitleViewModel(posterURL: titleName.poster_path ?? "", originalName: titleName.original_name ?? titleName.original_title ?? ""))
         
@@ -128,7 +146,7 @@ extension SearchViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         
-        let title = titles[indexPath.row]
+        let title = discoveriesTitles[indexPath.row]
         guard let titleName = title.original_name ?? title.original_title else { return }
         
         APICaller.shared.getMovie(with: titleName + "trailer") { [weak self] result in
@@ -137,10 +155,13 @@ extension SearchViewController: UITableViewDelegate, UITableViewDataSource {
             case .success(let videoElement):
                 
                 DispatchQueue.main.async {
+                    
                     let vc = TitleTrailerViewController()
                     vc.configureController(with: TitlePreviewModel(title: titleName, youTubeVideo: videoElement, overview: title.overview ?? ""))
+                    
                     self?.navigationController?.pushViewController(vc, animated: true)
                 }
+                
             case .failure(let error):
                 print(error.localizedDescription)
             }
