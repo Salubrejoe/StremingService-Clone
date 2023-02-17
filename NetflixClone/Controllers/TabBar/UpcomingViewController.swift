@@ -27,7 +27,6 @@ class UpcomingViewController: UIViewController {
         super.viewDidLoad()
         
         view.backgroundColor = .systemBackground
-        
         view.addSubview(upcomingTableView)
         
         // Set title
@@ -46,28 +45,6 @@ class UpcomingViewController: UIViewController {
         super.viewDidLayoutSubviews()
         
         upcomingTableView.frame = view.bounds
-    }
-
-    
-    
-    private func fetchUpcoming() {
-        
-        APICaller.shared.getUpcomingMovies { result in
-            
-            switch result {
-                
-            case .success(let titles):
-                
-                self.titles = titles
-                
-                DispatchQueue.main.async {
-                    self.upcomingTableView.reloadData()
-                }
-                
-            case .failure(let error):
-                print(error)
-            }
-        }
     }
 }
 
@@ -94,5 +71,50 @@ extension UpcomingViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         return 160
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        
+        let title = titles[indexPath.row]
+        guard let titleName = title.original_name ?? title.original_title else { return }
+        
+        APICaller.shared.getMovie(with: titleName + "trailer") { [weak self] result in
+            
+            switch result {
+            case .success(let videoElement):
+                
+                DispatchQueue.main.async {
+                    let vc = TitleTrailerViewController()
+                    vc.configureController(with: TitlePreviewModel(title: titleName, youTubeVideo: videoElement, overview: title.overview ?? ""))
+                    self?.navigationController?.pushViewController(vc, animated: true)
+                }
+            case .failure(let error):
+                print(error.localizedDescription)
+            }
+        }
+    }
+    
+    
+    // MARK: APICaller
+    
+    private func fetchUpcoming() {
+        
+        APICaller.shared.getUpcomingMovies { [weak self] result in
+            
+            switch result {
+                
+            case .success(let titles):
+                
+                self?.titles = titles
+                
+                DispatchQueue.main.async {
+                    self?.upcomingTableView.reloadData()
+                }
+                
+            case .failure(let error):
+                print(error)
+            }
+        }
     }
 }

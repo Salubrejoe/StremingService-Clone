@@ -7,7 +7,7 @@
 
 import UIKit
 
-
+// MARK: Sections enum
 enum Sections: Int {
     case trendingMovies = 0
     case trendingTv = 1
@@ -20,6 +20,9 @@ enum Sections: Int {
 class HomeViewController: UIViewController {
     
     
+    private var randomTrendingMovie: Title?
+    private var headerView: HeroHeaderView?
+    
     // String for header titles
     let sectionTitles: [String] = [
         "Trending Movies",
@@ -29,35 +32,36 @@ class HomeViewController: UIViewController {
         "Top rated"
     ]
     
+    // MARK: TableView
     // Anonymous closure pattern to initialize TableView
     private let homeFeedTableView: UITableView = {
         
-        let table = UITableView(frame: .zero, style: .grouped)
+        let table                          = UITableView(frame: .zero, style: .grouped)
         table.showsVerticalScrollIndicator = false
-        table.register(CollectionViewTableViewCell.self, forCellReuseIdentifier: CollectionViewTableViewCell.identifier)
         
+        table.register(CollectionViewTableViewCell.self, forCellReuseIdentifier: CollectionViewTableViewCell.identifier)
         return table
     }()
 
     
     
-    
+    // MARK: View did Load
     override func viewDidLoad() {
         super.viewDidLoad()
         
         view.backgroundColor = .systemBackground
         view.addSubview(homeFeedTableView)
 
-        homeFeedTableView.delegate = self
+        homeFeedTableView.delegate   = self
         homeFeedTableView.dataSource = self
         
         configureNavigationBar()
+        
 
-        homeFeedTableView.tableHeaderView = HeroHeaderView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 550))
-        
-        
+        headerView                        = HeroHeaderView(frame: CGRect(x: 0, y: 0, width: view.bounds.width, height: 550))
+        homeFeedTableView.tableHeaderView = headerView
+        configureHeaderView()
     }
-    
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         
@@ -65,8 +69,25 @@ class HomeViewController: UIViewController {
     }
 
     
+    // MARK: Configure Header and Navigation Bar
+    private func configureHeaderView() {
+        
+        APICaller.shared.getTrendingMovies { [weak self] result in
+            
+            switch result {
+                
+            case .success(let titles):
+                
+                let selectedTitle = titles.randomElement()
+                self?.randomTrendingMovie = selectedTitle
+                self?.headerView?.configure(with: TitleViewModel(posterURL: selectedTitle?.poster_path ?? "", originalName: selectedTitle?.original_name ?? selectedTitle?.original_title ?? ""))
+                
+            case .failure(let error):
+                print(error.localizedDescription)
+            }
+        }
+    }
     
-    // Navigation bar
     private func configureNavigationBar() {
         
         var image = UIImage(named: "netflixLogo")
@@ -80,7 +101,6 @@ class HomeViewController: UIViewController {
         
         navigationController?.navigationBar.tintColor = .red
     }
-    
 }
 
 
@@ -105,6 +125,8 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
             return UITableViewCell()
         }
         
+        
+        cell.delegate = self
         
         // Switch between sections, for each section
         // configure cell.titles in case the result from APICaller.shared.getTrending is .success
@@ -218,5 +240,23 @@ extension HomeViewController: UITableViewDelegate, UITableViewDataSource {
         let defaultOffset = view.safeAreaInsets.top
         let offset = scrollView.contentOffset.y + defaultOffset
         navigationController?.navigationBar.transform = .init(translationX: 0, y: min(0, -offset))
+    }
+}
+
+
+// MARK: Delegate protocol method definition
+extension HomeViewController: CollectionViewTableViewCellDelegate {
+    
+    func collectionViewTableViewCellDidTapCell(_ cell: CollectionViewTableViewCell, viewModel: TitlePreviewModel) {
+        
+        DispatchQueue.main.async { [weak self] in
+            
+            let viewController = TitleTrailerViewController()
+            
+            viewController.configureController(with: viewModel)
+            
+            self?.navigationController?.pushViewController(viewController, animated: true)
+        }
+        
     }
 }
