@@ -23,6 +23,14 @@ class HomeViewController: UIViewController {
     private var randomTrendingMovie: Title?
     private var headerView: HeroHeaderView?
     
+    private let spacing: UIView = {
+       
+        let view = UIView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.widthAnchor.constraint(equalToConstant: 210).isActive = true        
+        return view
+    }()
+    
     // String for header titles
     let sectionTitles: [String] = [
         "Trending Movies",
@@ -93,7 +101,10 @@ class HomeViewController: UIViewController {
         var image = UIImage(named: "netflixLogo")
         image = image?.withRenderingMode(.alwaysOriginal)
         
-        navigationItem.leftBarButtonItem = UIBarButtonItem(image: image, style: .done, target: self, action: nil)
+        navigationItem.leftBarButtonItems = [
+            UIBarButtonItem(image: image, style: .done, target: self, action: nil),
+            UIBarButtonItem(customView: spacing)
+        ]
         navigationItem.rightBarButtonItems = [
             UIBarButtonItem(image: UIImage(systemName: "person"), style: .plain, target: self, action: nil),
             UIBarButtonItem(image: UIImage(systemName: "play.rectangle"), style: .done, target: self, action: nil)

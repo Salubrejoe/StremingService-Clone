@@ -77,7 +77,17 @@ class CollectionViewTableViewCell: UITableViewCell {
     
     // MARK: Download item
     private func downloadTitle(at indexPath: IndexPath) {
-        print("Downloading from item at indexPath")
+        
+        DataPersistanceManager.shared.downloadTitle(with: titles[indexPath.row]) { result in
+            
+            switch result {
+                
+            case .success():
+                print("Downloaded to database")
+            case .failure(let error):
+                print(error.localizedDescription)
+            }
+        }
     }
 }
 
